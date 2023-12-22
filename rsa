@@ -1,0 +1,89 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+// Function to calculate the greatest common divisor (GCD) of two numbers
+uint64_t gcd(uint64_t a, uint64_t b) {
+    while (b != 0) {
+        uint64_t temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+// Function to calculate the modular exponentiation (base^exp % mod)
+uint64_t mod_exp(uint64_t base, uint64_t exp, uint64_t mod) {
+    uint64_t result = 1;
+    while (exp > 0) {
+        if (exp % 2 == 1) {
+            result = (result * base) % mod;
+        }
+        base = (base * base) % mod;
+        exp /= 2;
+    }
+    return result;
+}
+
+// Function to perform Pollard's rho algorithm for factorization
+uint64_t pollards_rho(uint64_t n) {
+    uint64_t x = 2, y = 2, d = 1;
+    uint64_t c = rand() % (n - 1) + 1;
+
+    while (d == 1) {
+        x = (mod_exp(x, 2, n) + c) % n;
+        y = (mod_exp(y, 2, n) + c) % n;
+        y = (mod_exp(y, 2, n) + c) % n;
+        d = gcd(abs(x - y), n);
+    }
+
+    return d;
+}
+
+// Function to factorize a number into its prime factors
+void factorize(uint64_t n) {
+    if (n <= 1) {
+        printf("%lu=%lu*%lu\n", n, n, 1);
+        return;
+    }
+
+    while (n % 2 == 0) {
+        printf("2*");
+        n /= 2;
+    }
+
+    while (n > 1) {
+        uint64_t factor = pollards_rho(n);
+        printf("%lu", factor);
+        n /= factor;
+
+        if (n > 1) {
+            printf("*");
+        }
+    }
+
+    printf("\n");
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file>\n", argv[0]);
+        return 1;
+    }
+
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    uint64_t num;
+    while (fscanf(file, "%lu", &num) == 1) {
+        printf("%lu=", num);
+        factorize(num);
+    }
+
+    fclose(file);
+
+    return 0;
+}
